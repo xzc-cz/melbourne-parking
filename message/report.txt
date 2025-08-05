@@ -1,0 +1,99 @@
+City of Melbourne: To Improve Parking Availability for Melbourne Commuters
+1
+Project Overview
+Problem Statement
+Melbourne has become more dependent on car travel since COVID compared with similar cities across the world. A major source of congestion in Melbourne's CBD is the time drivers spend searching for a parking space. With a high rate of car ownership, this search can be difficult on average, drivers spend 17 hours a year searching for a parking spot within Melbourne city. This forces Melbourne commuters to continually drive around the city until one is free, increasing congestion, pollution and wasting time. The root cause of this frustration and inefficiency is the absence of real-time data on available parking spaces, which leaves drivers in frustration.
+How might we provide drivers with real-time parking information to reduce search times and ease congestion?
+Target Audience The primary audience for this project is Melbourne commuters who are short-term visitors to the CBD. These drivers are looking for public parking spaces and regularly face the daily challenges of the city's "car problem," including traffic congestion, difficulty finding parking, longer commute times, and higher fuel costs. This target group is directly impacted by the inefficiency of the current parking system.
+News articles: ○ Parking improvement works | City of Melbourne ○ Australia's biggest city has a car problem. What should Melbourne do to fix it? - ABC News
+○
+Melbourne Transport Strategy 2030: 50,000 cars off the roads | news.com.au — Australia’s leading news site for latest headlines
+○
+Melbourne proposes new parking scheme to keep city moving - Inside Local
+○
+Melbourne CBD set for parking overhaul as part of council plans to reduce congestion - ABC News
+2
+Personas
+Current Iteration
+EPIC 1.0 Data Insights
+Must Have
+As a Melbourne commuter, I want to accessible insights into key growth trends so that I can understand their full impact on urban infrastructure and congestion.
+This epic helps everyday Melbourne commuters with data insights that may influence individual behavior and deeper understanding on car congestion in the CBD.
+Benefits:
+●
+Feeling informed about city-wide challenges can foster a sense of shared responsibility and community, encouraging commuters to contribute to solutions rather than just being passive victims of congestion
+US 1.1 As a Melbourne commuter I want to know insights on the growth of car ownership so that I can quantify its impact on urban infrastructure.
+3
+US 1.2 As a Melbourne commuter, I want to know the increase of Melbourne’s population in CBD so that I can understand the impact on city congestion.
+EPIC 2 .0 Real-Time Parking availability
+Must Have
+As a Melbourne commuter, I want to view real-time parking and historical data to guide me to an available spot, so that I can reduce my search time, lower my emissions, and contribute to a more efficient and sustainable city.
+This epic enables commuters to quickly secure a parking space with minimal circling, and to alleviate the "car park problem" in Melbourne's CBD by providing transparency and guidance around parking availability.
+Benefits:
+●
+Commuters cut the average 17 hours a year spent searching for parking, navigating directly to guaranteed open spots for a more predictable and less stressful journey.
+●
+Less time spent driving and idling while searching for parking means less fuel is consumed. This directly translates to cost savings for the commuter on a daily basis.
+●
+To help drivers find legal parking spaces and could potentially include features that alert them when their paid time is expiring, significantly reducing the risk of receiving a parking fine.
+●
+Access to historical and predictive data enables commuters to strategically time their arrival, avoiding peak hours and ensuring a smoother trip from the outset.
+US 2.1 As a Melbourne commuter, I want to easily find available CBD parking spots so that I can minimize my driving time by quickly securing a parking space.
+US 2.2 As a Melbourne commuter, I want to see predicted parking spot availability for specific areas and streets, so I can quickly find parking and avoid congested zones.
+US 2.3 As a Melbourne commuter, I want to understand historical parking availability trends near my destination, enabling me to strategically time my arrival and prevent unnecessary delay.
+EPIC 3.0 Empowering Eco-Conscious Commuters for a Greener Melbourne
+Should Have
+As a Melbourne commuter, I want to easily access information that helps me choose environmentally friendly ways to travel, so I can personally contribute to a greener city and embrace a sustainable lifestyle.
+4
+This epic integrates various sustainable transport options to provide commuters with the tools and information they need to reduce their carbon footprint, minimize time spent searching for parking, and contribute to a healthier, more livable urban environment.
+Benefits:
+●
+Clear understanding of the positive environmental impact of their choices (e.g., CO2 emissions saved).
+●
+Feeling of contributing to a greener city and sustainable future.
+US 3.1
+As a Melbourne commuter, I want to see the environmental impact (e.g., CO2 emissions saved) of different travel choices so I can make greener decisions.
+US 3.2
+As a Melbourne commuter, I want to be shown the "greenest" or most environmentally friendly parking options (e.g., parking near public transport, or less congested areas) when I'm looking for a spot in the CBD, so I can further reduce my carbon footprint and contribute positively to urban air quality.
+Datasets
+Name
+Link
+Epic
+Motor Vehicle Census, Australia methodology 2021
+https://www.abs.gov.au/methodologies/motor-vehicle-census-australia-methodology/31-jan-2021
+Epic 1
+Australian Bureau of Statistics (ABS) Regional population 2021
+https://www.abs.gov.au/statistics/people/population/regional-population/2021/32180DS0001_2001-21.xlsx
+Epic 1
+On-street Parking Bay Sensors
+https://data.melbourne.vic.gov.au/explore/dataset/on-street-parking-bay-sensors/information
+Epic 2
+On-street Parking Bays
+https://data.melbourne.vic.gov.au/explore/dataset/on-street-parking-bays/information/
+Epic 2
+5
+Sign plates located in each Parking zone
+https://data.melbourne.vic.gov.au/explore/dataset/sign-plates-located-in-each-parking-zone/t
+able/
+Epic 2
+Parking zones linked to street segments
+https://data.melbourne.vic.gov.au/explore/dataset/parking-zones-linked-to-street-segments/t
+able/
+Epic 2
+Melbourne LGA Boundaries
+https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-e
+dition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files
+Epic 2
+Individual Carbon Footprint Calculation
+https://www.kaggle.com/datasets/dumanmesut/individual-carbon-footprint-calculation
+Epic 3
+Public Transport Victoria (PTV) GTFS
+https://opendata.transport.vic.gov.au/dataset/gtfs-realtime
+Epic 3
+Section B
+Leankit
+Section C
+Links to Other Analysis and Design Artefacts:
+6
+Empathy map
+Lotus Blossom

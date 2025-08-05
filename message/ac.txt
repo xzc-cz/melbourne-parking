@@ -1,0 +1,26 @@
+1.
+Given I am accessing the insights dashboard
+When I click on the “Vehicle Ownership Trends” tile
+Then page will show interactive chart showing the growth rate of car registrations across Melbourne over the past 5-10 years.
+2.
+Given I am a commuter traveling into Melbourne CBD
+When I access population growth data for the CBD
+Then I can understand how increased population contributes to traffic congestion and parking demand
+3.
+Given I am a commuter who drives to the CBD,
+When I open the parking app to search for real-time available parking spots,
+Then I should be presented with a live map and listed all nearby available parking spaces.
+4.
+Given I am accessing the parking availability page
+When I enter or select a specific area or street name
+Then the system will clearly display predicted parking availability for different times of the day.( identify quickly which times are easier or harder to find parking based on the provided predictions)
+5.
+Given I am a commuter using the system When I select a destination area in Melbourne Then I can see historical parking availability data for that area displayed clearly.
+6.
+Given I am swich the travel options
+When I select or compare different travel modes
+Then the page will display the estimated environmental impact including CO2 emissions saved
+7.
+Given I am searching for parking options in the CBD
+When I enable the “greenest option” filter or sorting
+Then the page will highlight parking options that are near public transport or in less congested areas

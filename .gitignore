@@ -1,0 +1,44 @@
+# Database configuration files
+wp-config.php
+phpmyadmin-config.php
+
+# Temporary files
+*.tmp
+*.log
+*.pid
+
+# Cache files
+cache/
+tmp/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.sql
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Node modules (if any)
+node_modules/
+
+# Composer files (if any)
+vendor/
+composer.lock 
