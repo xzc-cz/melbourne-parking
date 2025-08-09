@@ -7,6 +7,7 @@
 require_once('wp-config.php');
 require_once('wp-includes/functions.php');
 require_once('data/melbourne-parking-data.php');
+require_once('data/parking-data-service.php');
 ?>
 
 <!DOCTYPE html>
@@ -123,7 +124,8 @@ require_once('data/melbourne-parking-data.php');
                     </div>
                     <div class="card-body">
                         <?php 
-                        $real_time_data = getRealTimeAvailability();
+                        $dataset = get_parking_real_time_dataset();
+                        $real_time_data = $dataset['stats'];
                         ?>
                         <div class="row">
                             <div class="col-md-3 text-center">

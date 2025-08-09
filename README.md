@@ -47,16 +47,6 @@ This project provides comprehensive parking management solutions for Melbourne C
 2. Start Apache and MySQL services
 3. Copy project files to `htdocs` directory
 
-#### Using WAMP
-1. Download and install [WAMP](https://www.wampserver.com/)
-2. Start WAMP services
-3. Copy project files to `www` directory
-
-#### Using MAMP
-1. Download and install [MAMP](https://www.mamp.info/)
-2. Start MAMP services
-3. Copy project files to `htdocs` directory
-
 ### 2. Database Setup
 
 1. Open phpMyAdmin (usually http://localhost/phpmyadmin)

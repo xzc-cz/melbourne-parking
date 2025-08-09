@@ -50,20 +50,7 @@ get_header(); ?>
         </div>
     </div>
     
-    <div class="row mt-5">
-        <div class="col-12">
-            <div class="alert alert-info">
-                <h4>System Features</h4>
-                <ul>
-                    <li>Reduce average 17 hours of annual parking search time</li>
-                    <li>Provide real-time parking spot availability information</li>
-                    <li>Display historical parking pattern analysis</li>
-                    <li>Calculate environmental impact of different travel modes</li>
-                    <li>Recommend green parking options</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+    
 </div>
 
 <?php get_footer(); ?> 

@@ -7,38 +7,12 @@
 require_once('wp-config.php');
 require_once('wp-includes/functions.php');
 require_once('data/melbourne-parking-data.php');
+require_once('data/parking-data-service.php');
 
-// Get real-time availability from comprehensive data
-$real_time_data = getRealTimeAvailability();
-
-// Convert sensor data to parking spots for display
-$parking_spots = [];
-foreach ($parking_sensors as $sensor) {
-    $parking_spots[] = [
-        'id' => $sensor['sensor_id'],
-        'name' => $sensor['street_name'] . ' Parking Bay',
-        'lat' => $sensor['lat'],
-        'lng' => $sensor['lng'],
-        'available' => $sensor['status'] === 'vacant' ? 1 : 0,
-        'total' => 1,
-        'price' => getBayRate($sensor['bay_id']),
-        'zone' => $sensor['zone'],
-        'sensor_id' => $sensor['sensor_id'],
-        'status' => $sensor['status'],
-        'last_updated' => $sensor['last_updated']
-    ];
-}
-
-// Helper function to get bay rate
-function getBayRate($bay_id) {
-    global $parking_bays;
-    foreach ($parking_bays as $bay) {
-        if ($bay['bay_id'] === $bay_id) {
-            return $bay['rate'];
-        }
-    }
-    return '$5.50/hour'; // Default rate
-}
+// Get real-time availability via API with fallback
+$dataset = get_parking_real_time_dataset();
+$real_time_data = $dataset['stats'];
+$parking_spots = $dataset['spots'];
 
 // Historical parking availability data from comprehensive dataset
 $historical_data = [
@@ -70,6 +44,8 @@ foreach ($zone_statistics as $zone_name => $stats) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         #map {
@@ -129,30 +105,19 @@ foreach ($zone_statistics as $zone_name => $stats) {
                     <div class="row">
                         <div class="col-md-4">
                             <label for="searchLocation" class="form-label">Search Location</label>
-                            <input type="text" class="form-control" id="searchLocation" placeholder="Enter address or landmark">
+                            <input type="text" class="form-control" id="searchLocation" placeholder="Enter address (e.g., 200 Queen St)">
                         </div>
                         <div class="col-md-3">
-                            <label for="priceFilter" class="form-label">Price Range</label>
-                            <select class="form-select" id="priceFilter">
-                                <option value="">All Prices</option>
-                                <option value="low">Under $4/hour</option>
-                                <option value="medium">$4-$5/hour</option>
-                                <option value="high">Over $5/hour</option>
-                            </select>
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-outline-secondary w-100" type="button" onclick="locateAddress()">
+                                <i class="fas fa-location-dot"></i> Go
+                            </button>
                         </div>
-                        <div class="col-md-3">
-                            <label for="availabilityFilter" class="form-label">Availability</label>
-                            <select class="form-select" id="availabilityFilter">
-                                <option value="">All</option>
-                                <option value="high">High (>50%)</option>
-                                <option value="medium">Medium (20-50%)</option>
-                                <option value="low">Low (<20%)</option>
-                            </select>
-                        </div>
+                        <div class="col-md-3"></div>
                         <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-primary w-100" onclick="filterParking()">
-                                <i class="fas fa-search"></i> Search
+                            <button class="btn btn-primary w-100" onclick="filterParking(true)">
+                                <i class="fas fa-filter"></i> Refresh
                             </button>
                         </div>
                     </div>
@@ -226,98 +191,32 @@ foreach ($zone_statistics as $zone_name => $stats) {
             </div>
         </div>
 
-        <!-- Parking Predictions -->
-        <div class="row mb-5">
+        
+        <!-- Parking Predictions (street-specific) -->
+        <div class="row mb-3">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header bg-info text-white">
-                        <h3><i class="fas fa-chart-line"></i> Parking Availability Predictions</h3>
-                        <p class="mb-0">Predictive analysis for optimal parking times</p>
+                        <h3><i class="fas fa-chart-line"></i> Today's Parking Availability Predictions — <span id="predictionStreet"></span></h3>
+                        <p class="mb-0">Click a marker on the map to select a Melbourne CBD street</p>
                     </div>
                     <div class="card-body">
                         <canvas id="predictionChart" width="400" height="200"></canvas>
-                        <div class="mt-3">
-                            <h5>Prediction Insights:</h5>
-                            <ul>
-                                <li><strong>Best time to park:</strong> Early morning (6-8 AM) or late evening (6-8 PM)</li>
-                                <li><strong>Peak congestion:</strong> 9 AM - 5 PM weekdays</li>
-                                <li><strong>Weekend availability:</strong> Generally higher than weekdays</li>
-                                <li><strong>Weather impact:</strong> Rain increases parking demand by 15%</li>
-                            </ul>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Historical Data Analysis -->
+        
         <div class="row mb-5">
-            <div class="col-md-6">
+            <div class="col-12">
                 <div class="card h-100">
                     <div class="card-header bg-warning text-dark">
-                        <h4><i class="fas fa-history"></i> Historical Parking Patterns</h4>
+                        <h4><i class="fas fa-history"></i> Historical Parking Patterns — <span id="streetNameHistorical"></span></h4>
                     </div>
                     <div class="card-body">
                         <canvas id="historicalChart" width="400" height="200"></canvas>
-                        <div class="mt-3">
-                            <h6>Pattern Analysis:</h6>
-                            <ul>
-                                <li>Morning rush: 6-9 AM (lowest availability)</li>
-                                <li>Midday: 10 AM - 3 PM (moderate availability)</li>
-                                <li>Evening: 4-7 PM (improving availability)</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header bg-secondary text-white">
-                        <h4><i class="fas fa-clock"></i> Time-based Availability</h4>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="timeChart" width="400" height="200"></canvas>
-                        <div class="mt-3">
-                            <h6>Optimal Parking Times:</h6>
-                            <ul>
-                                <li><strong>Weekdays:</strong> Before 8 AM or after 6 PM</li>
-                                <li><strong>Weekends:</strong> Anytime (higher availability)</li>
-                                <li><strong>Public Holidays:</strong> Excellent availability</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Parking Zones Information -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h4><i class="fas fa-info-circle"></i> Parking Zones Information - City of Melbourne Data</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <?php foreach ($parking_zones as $zone => $info): ?>
-                            <div class="col-md-4">
-                                <div class="card">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title"><?php echo $zone; ?></h5>
-                                        <p class="card-text">
-                                            <strong>Rate:</strong> <?php echo $info['rate']; ?><br>
-                                            <strong>Max Time:</strong> <?php echo $info['max_time']; ?><br>
-                                            <strong>Total Bays:</strong> <?php echo $info['total_bays']; ?><br>
-                                            <strong>Sensor Coverage:</strong> <?php echo $info['sensor_coverage']; ?><br>
-                                            <strong>Peak Hours:</strong> <?php echo $info['peak_hours']; ?><br>
-                                            <strong>Best Availability:</strong> <?php echo $info['best_availability']; ?>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -325,32 +224,33 @@ foreach ($zone_statistics as $zone_name => $stats) {
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Initialize map
-        const map = L.map('map').setView([-37.8136, 144.9631], 15);
+        const map = L.map('map').setView([-37.8136, 144.9631], 13);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        // Cluster group for massive datasets
+        const clusterGroup = L.markerClusterGroup({
+            showCoverageOnHover: false,
+            disableClusteringAtZoom: 16,
+            maxClusterRadius: 60,
+        });
+
         // Add parking spots to map
         const parkingData = <?php echo json_encode($parking_spots); ?>;
-        
-        parkingData.forEach(spot => {
-            let color = 'red'; // Default to occupied
+
+        function createMarker(spot) {
+            let color = 'red';
             let statusText = 'Occupied';
-            
-            if (spot.status === 'vacant') {
-                color = 'green';
-                statusText = 'Available';
-            } else if (spot.status === 'fault') {
-                color = 'orange';
-                statusText = 'Sensor Fault';
-            }
-            
+            if (spot.status === 'fault') { color = 'orange'; statusText = 'Sensor Fault'; }
+            else if (spot.available) { color = 'green'; statusText = 'Available'; }
+
             const marker = L.marker([spot.lat, spot.lng])
-                .addTo(map)
                 .bindPopup(`
                     <strong>${spot.name}</strong><br>
                     Status: ${statusText}<br>
@@ -361,27 +261,38 @@ foreach ($zone_statistics as $zone_name => $stats) {
                         Navigate
                     </button>
                 `);
-            
+            marker.on('click', () => {
+                const street = streetFromSpot(spot);
+                selectStreetFromMap(street);
+            });
             marker.setIcon(L.divIcon({
                 className: 'custom-div-icon',
                 html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
                 iconSize: [20, 20],
                 iconAnchor: [10, 10]
             }));
-        });
+            return marker;
+        }
 
-        // Prediction Chart
+        parkingData.forEach(spot => {
+            if (spot.lat && spot.lng) {
+                clusterGroup.addLayer(createMarker(spot));
+            }
+        });
+        map.addLayer(clusterGroup);
+
+        // Prediction Chart (area-specific)
         const predictionCtx = document.getElementById('predictionChart').getContext('2d');
-        new Chart(predictionCtx, {
+        const predictionChart = new Chart(predictionCtx, {
             type: 'line',
             data: {
-                labels: ['6AM', '8AM', '10AM', '12PM', '2PM', '4PM', '6PM', '8PM'],
+                labels: ['6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM'],
                 datasets: [{
                     label: 'Predicted Availability (%)',
-                    data: [85, 25, 15, 20, 30, 45, 70, 80],
+                    data: [],
                     borderColor: 'rgb(75, 192, 192)',
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    tension: 0.1
+                    tension: 0.2
                 }]
             },
             options: {
@@ -399,20 +310,18 @@ foreach ($zone_statistics as $zone_name => $stats) {
             }
         });
 
-        // Historical Chart
+        // Historical Chart (street-specific) - single series by hour
         const historicalCtx = document.getElementById('historicalChart').getContext('2d');
-        new Chart(historicalCtx, {
-            type: 'bar',
+        const historicalChart = new Chart(historicalCtx, {
+            type: 'line',
             data: {
                 labels: ['6AM', '7AM', '8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM'],
                 datasets: [{
-                    label: 'Morning',
-                    data: <?php echo json_encode($historical_data['morning']); ?>,
-                    backgroundColor: 'rgba(255, 99, 132, 0.8)'
-                }, {
-                    label: 'Afternoon',
-                    data: <?php echo json_encode($historical_data['afternoon']); ?>,
-                    backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                    label: 'Historical Availability (%)',
+                    data: [],
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                    tension: 0.2
                 }]
             },
             options: {
@@ -430,42 +339,160 @@ foreach ($zone_statistics as $zone_name => $stats) {
             }
         });
 
-        // Time-based Chart
-        const timeCtx = document.getElementById('timeChart').getContext('2d');
-        new Chart(timeCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['High Availability', 'Medium Availability', 'Low Availability'],
-                datasets: [{
-                    data: [40, 35, 25],
-                    backgroundColor: [
-                        'rgba(40, 167, 69, 0.8)',
-                        'rgba(255, 193, 7, 0.8)',
-                        'rgba(220, 53, 69, 0.8)'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+        // Helpers
+        function streetFromSpot(s) {
+            const nm = String(s.name || '');
+            return nm.replace(/\s*Parking Bay$/i, '').trim();
+        }
+
+        function computeStreetStats(streetKeyword = '') {
+            const spots = parkingData;
+            let available = 0, occupied = 0, fault = 0, total = 0;
+            spots.forEach(s => {
+                const street = streetFromSpot(s).toLowerCase();
+                const matches = !streetKeyword || street.includes(streetKeyword);
+                if (matches) {
+                    total++;
+                    if (s.status === 'fault') fault++;
+                    else if (s.available) available++; else occupied++;
                 }
+            });
+            return { available, occupied, fault, total };
+        }
+
+        // Choose curve patterns based on status composition
+        // Returns {predMultipliers: number[], histSeries: number[]}
+        function choosePatterns(stats) {
+            const total = stats.total || 1;
+            const ar = stats.available / total; // availability ratio
+            const or = stats.occupied / total;  // occupied ratio
+            const fr = stats.fault / total;     // fault ratio
+
+            // Mode A: Availability-high (ar >= 0.6)
+            const modeA_pred = [0.95,0.9,0.85,0.8,0.78,0.8,0.82,0.85,0.88,0.9,0.93,0.95,0.97,0.95,0.92];
+            const modeA_hist = [88,82,75,68,60,62,65,70,75,80];
+
+            // Mode B: Occupied-high (or >= 0.6)
+            const modeB_pred = [0.7,0.55,0.4,0.35,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.68,0.65];
+            const modeB_hist = [40,35,30,28,25,27,30,35,40,45];
+
+            // Mode C: Fault-noticeable (fr >= 0.1)
+            // Flatter curve with uncertainty penalty
+            const modeC_pred = [0.6,0.58,0.56,0.55,0.55,0.56,0.58,0.6,0.6,0.62,0.62,0.6,0.6,0.58,0.56];
+            const modeC_hist = [55,54,53,52,52,53,54,55,56,55];
+
+            if (fr >= 0.1) {
+                return { predMultipliers: modeC_pred, histSeries: modeC_hist };
             }
-        });
+            if (or >= 0.6) {
+                return { predMultipliers: modeB_pred, histSeries: modeB_hist };
+            }
+            if (ar >= 0.6) {
+                return { predMultipliers: modeA_pred, histSeries: modeA_hist };
+            }
+            // Mixed: interpolate between A and B by availability ratio
+            const w = Math.max(0, Math.min(1, (ar - 0.3) / 0.3));
+            const mix = (a,b)=>a.map((v,i)=> Math.round((w*v + (1-w)*b[i]) * 100)/100);
+            return { predMultipliers: mix(modeA_pred, modeB_pred), histSeries: mix(modeA_hist, modeB_hist) };
+        }
+
+        function updatePredictionCharts(streetKwRaw = '') {
+            const streetKw = (streetKwRaw || '').trim().toLowerCase();
+            document.getElementById('predictionStreet').textContent = streetKw || 'All CBD Streets';
+
+            const stats = computeStreetStats(streetKw);
+            const patterns = choosePatterns(stats);
+
+            // Compute simple predicted availability curve for the selected area
+            // Heuristic: base on current ratio and selected pattern multipliers
+            const labels = predictionChart.data.labels;
+            const base = stats.total > 0 ? Math.round((stats.available / stats.total) * 100) : 0;
+            const multipliers = patterns.predMultipliers;
+            predictionChart.data.datasets[0].data = labels.map((_, i) => Math.max(0, Math.min(100, Math.round(base * multipliers[i]))));
+            predictionChart.update();
+        }
+
+        function updateHistoricalChart(streetKwRaw = '') {
+            const streetKw = (streetKwRaw || '').trim().toLowerCase();
+            document.getElementById('streetNameHistorical').textContent = streetKw || 'All CBD Streets';
+
+            // Street-specific historical pattern using selected mode
+            const base = computeStreetStats(streetKw);
+            const { histSeries } = choosePatterns(base);
+            historicalChart.data.datasets[0].data = histSeries;
+            historicalChart.update();
+        }
+
+        function selectStreetFromMap(street) {
+            updatePredictionCharts(street);
+            updateHistoricalChart(street);
+        }
+
+        updatePredictionCharts('');
+        updateHistoricalChart('');
 
         // Filter function
-        function filterParking() {
-            const location = document.getElementById('searchLocation').value;
-            const price = document.getElementById('priceFilter').value;
-            const availability = document.getElementById('availabilityFilter').value;
-            
-            // Implement filtering logic here
-            console.log('Filtering:', { location, price, availability });
-            
-            // For now, just show an alert
-            alert('Filtering functionality would be implemented here with real API calls to City of Melbourne data.');
+        async function filterParking(forceSensors = false) {
+            const mode = 'sensors';
+            const params = new URLSearchParams({ mode });
+            try {
+                const resp = await fetch('api/parking-search.php?' + params.toString(), { cache: 'no-store' });
+                if (!resp.ok) throw new Error('Network error');
+                const data = await resp.json();
+                updateMap(data.spots);
+                updateStats(data.stats);
+            } catch (e) {
+                console.error(e);
+                alert('Failed to fetch filtered data.');
+            }
+        }
+
+        // Geocode using Nominatim (OpenStreetMap) - client side
+        async function locateAddress() {
+            const q = document.getElementById('searchLocation').value.trim();
+            if (!q) {
+                alert('请输入地址');
+                return;
+            }
+            try {
+                const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q + ', Melbourne, VIC');
+                const resp = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+                if (!resp.ok) throw new Error('geocode failed');
+                const arr = await resp.json();
+                if (!Array.isArray(arr) || arr.length === 0) {
+                    alert('未找到该地址');
+                    return;
+                }
+                const lat = parseFloat(arr[0].lat);
+                const lon = parseFloat(arr[0].lon);
+                map.setView([lat, lon], 17);
+            } catch (err) {
+                console.error(err);
+                alert('地址解析失败，请重试');
+            }
+        }
+
+        function clearMarkers() {
+            clusterGroup.clearLayers();
+        }
+
+        function updateMap(spots) {
+            clearMarkers();
+            spots.forEach(spot => {
+                if (spot.lat && spot.lng) {
+                    clusterGroup.addLayer(createMarker(spot));
+                }
+            });
+        }
+
+        function updateStats(stats) {
+            const containers = document.querySelectorAll('.card-body .row.mb-3 .col-md-3 h5');
+            if (containers.length >= 4) {
+                containers[0].textContent = stats.total;
+                containers[1].textContent = stats.vacant;
+                containers[2].textContent = stats.occupied;
+                containers[3].textContent = stats.availability_percentage + '%';
+            }
         }
 
         // Navigation function
